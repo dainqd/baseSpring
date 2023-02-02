@@ -5,12 +5,14 @@ import com.example.basespring.dto.request.LoginRequest;
 import com.example.basespring.dto.request.RegisterRequest;
 import com.example.basespring.entities.Accounts;
 import com.example.basespring.entities.Roles;
-import com.example.basespring.repositories.AccountRepository;
+import com.example.basespring.enums.Enums;
 import com.example.basespring.service.MessageResourceService;
+import com.example.basespring.service.RoleService;
 import com.example.basespring.service.UserDetailsIpmpl;
+import com.example.basespring.service.UserDetailsServiceImpl;
 import com.example.basespring.utils.JwtUtils;
-import com.example.basespring.utils.Utils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -22,8 +24,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -33,7 +36,10 @@ public class AuthApi {
     AuthenticationManager authenticationManager;
 
     @Autowired
-    AccountRepository userRepository;
+    UserDetailsServiceImpl userDetailsService;
+
+    @Autowired
+    RoleService roleService;
 
     @Autowired
     MessageResourceService messageResourceService;
@@ -46,15 +52,28 @@ public class AuthApi {
 
     @PostMapping("/signin")
     public ResponseEntity<?> authenticateUser(@Validated @RequestBody LoginRequest loginRequest) {
-
+        Optional<Accounts> optionalUser = userDetailsService.findByUsername(loginRequest.getUsername());
+        if (!optionalUser.isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, messageResourceService.getMessage("account.not.found"));
+        }
+        Accounts account = optionalUser.get();
+        if (!account.isVerified()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, messageResourceService.getMessage("account.not.verified"));
+        }
+        if (account.getStatus() == Enums.AccountStatus.DEACTIVE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, messageResourceService.getMessage("account.not.active"));
+        }
+        if (account.getStatus() == Enums.AccountStatus.BLOCKED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, messageResourceService.getMessage("account.banned"));
+        }
+        if (account.getStatus() == Enums.AccountStatus.DELETED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, messageResourceService.getMessage("account.deleted"));
+        }
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginRequest.getUsername()
                         , loginRequest.getPassword()));
-
         SecurityContextHolder.getContext().setAuthentication(authentication);
-
         String jwt = jwtUtils.generateJwtToken(authentication);
-
         UserDetailsIpmpl userDetails = (UserDetailsIpmpl) authentication.getPrincipal();
         List<String> roles = userDetails.getAuthorities().stream()
                 .map(item -> item.getAuthority())
@@ -69,19 +88,30 @@ public class AuthApi {
 
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@Validated @RequestBody RegisterRequest registerRequest) {
-        if (userRepository.existsByUsername(registerRequest.getUsername())) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(messageResourceService.getMessage("account.username.exist"));
+        Optional<Accounts> optionalUser = userDetailsService.findByUsername(registerRequest.getUsername());
+        if (optionalUser.isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, messageResourceService.getMessage("account.username.exist"));
         }
-        if (userRepository.existsByEmail(registerRequest.getEmail())) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(messageResourceService.getMessage("account.email.exist"));
+        Optional<Accounts> userOptional = userDetailsService.findByEmail(registerRequest.getEmail());
+        if (userOptional.isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, messageResourceService.getMessage("account.email.exist"));
+        }
+        if (registerRequest.getPassword().length() < 6 || Objects.equals(registerRequest.getPassword(), "")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, messageResourceService.getMessage("account.password.invalid"));
+        }
+        if (!Objects.equals(registerRequest.getPassword(), registerRequest.getPasswordConfirm())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, messageResourceService.getMessage("account.password.incorrect"));
         }
         registerRequest.setPassword(encoder.encode(registerRequest.getPassword()));
         Accounts accounts = new Accounts(registerRequest);
-        userRepository.save(accounts);
+        accounts.setVerified(true);
+        Set<Roles> roles = new HashSet<>();
+        Roles userRole = roleService.findByName(Enums.Roles.USER)
+                .orElseThrow(() -> new RuntimeException(messageResourceService.getMessage("role.not.found")));
+        roles.add(userRole);
+        accounts.setRoles(roles);
+        accounts.setStatus(Enums.AccountStatus.ACTIVE);
+        userDetailsService.save(accounts);
         return ResponseEntity.ok(messageResourceService.getMessage("register.success"));
     }
 }

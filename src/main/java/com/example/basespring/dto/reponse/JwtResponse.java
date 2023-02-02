@@ -2,7 +2,6 @@ package com.example.basespring.dto.reponse;
 
 import lombok.*;
 
-import java.sql.Date;
 import java.util.List;
 
 @Getter
