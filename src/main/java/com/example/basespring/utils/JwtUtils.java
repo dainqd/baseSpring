@@ -1,7 +1,11 @@
 package com.example.basespring.utils;
 
 import com.example.basespring.entities.Accounts;
+import com.example.basespring.service.UserDetailsIpmpl;
+import io.jsonwebtoken.*;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import com.auth0.jwt.JWT;
@@ -9,11 +13,15 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
 
-import java.sql.Date;
+import java.util.Date;
 
 @Slf4j
 @Component
 public class JwtUtils {
+    @Value("${bezkoder.app.jwtSecret}")
+    public String jwtSecret;
+    @Value("${bezkoder.app.jwtExpirationMs}")
+    public int jwtExpirationsMs;
     // lớp này dùng để ký (là hoạt động mã hóa tạo ra chữ ký) và xác nhận (verify) token
     public static Algorithm algorithm;
     // giữ phương thức xác minh đúng định dạng  JWT và đúng chữ ký
@@ -71,6 +79,39 @@ public class JwtUtils {
                 .withIssuer(DEFAULT_ISSUER)
                 .withClaim("username", accounts.getUsername())
                 .sign(getAlgorithm());
+    }
+
+    public String generateJwtToken(Authentication authentication){
+        UserDetailsIpmpl userPrincipal = (UserDetailsIpmpl) authentication.getPrincipal();
+
+        return Jwts.builder()
+                .setSubject(userPrincipal.getUsername())
+                .setIssuedAt(new Date())
+                .setExpiration(new Date((new Date()).getTime() + jwtExpirationsMs))
+                .signWith(SignatureAlgorithm.HS512, jwtSecret)
+                .compact();
+    }
+
+    public String getUserNameFromJwtToken(String token){
+        return Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(token).getBody().getSubject();
+    }
+
+    public boolean validateJwtToken(String authToken){
+        try {
+            Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(authToken);
+            return true;
+        }catch (SignatureException e){
+            log.error("Invalid JWT signature: {}", e.getMessage());
+        }catch (MalformedJwtException e){
+            log.error("Invalid JWT token: {}", e.getMessage());
+        }catch (ExpiredJwtException e){
+            log.error("JWT token is expire: {}", e.getMessage());
+        }catch (UnsupportedJwtException e){
+            log.error("JWT token is unsupported: {}", e.getMessage());
+        }catch (IllegalArgumentException e){
+            log.error("JWT claim string is empty: {}", e.getMessage());
+        }
+        return false;
     }
 
     public static <T extends Enum<?>> T searchEnum(Class<T> enumeration, String search) {
