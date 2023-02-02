@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/test")
-public class HomeApi {
+public class HomeTestApi {
     @GetMapping("/hello")
     public ResponseEntity<?> getList(){
         return ResponseEntity.ok("Hello world");
