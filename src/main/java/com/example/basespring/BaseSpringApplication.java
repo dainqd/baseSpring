@@ -1,7 +1,12 @@
 package com.example.basespring;
 
+import com.example.basespring.entities.Roles;
+import com.example.basespring.enums.Enums;
+import com.example.basespring.service.RoleService;
 import nz.net.ultraq.thymeleaf.layoutdialect.LayoutDialect;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
@@ -21,7 +26,7 @@ import org.thymeleaf.templatemode.TemplateMode;
 import java.util.*;
 
 @SpringBootApplication
-public class BaseSpringApplication {
+public class BaseSpringApplication implements CommandLineRunner {
 
     public static void main(String[] args) {
         SpringApplication.run(BaseSpringApplication.class, args);
@@ -74,6 +79,26 @@ public class BaseSpringApplication {
     @Qualifier("restTemplate")
     public RestTemplate restTemplate() {
         return new RestTemplate();
+    }
+
+    @Autowired
+    RoleService roleService;
+
+    private void createRole(long id, Enums.Roles roleInput) {
+        Roles role = new Roles();
+        role.setId(id);
+        role.setName(roleInput);
+//        roleService.save(role);
+    }
+
+    public void generateRole() {
+        createRole(1, Enums.Roles.USER);
+        createRole(2, Enums.Roles.ADMIN);
+    }
+
+    @Override
+    public void run(String... arg0) throws Exception {
+        generateRole();
     }
 
 }

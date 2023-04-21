@@ -16,4 +16,8 @@ public class RoleService {
     public Optional<Roles> findByName(Enums.Roles name) {
         return roleRepository.findByName(name);
     }
+
+    public void save(Roles srole) {
+        roleRepository.save(srole);
+    }
 }
