@@ -66,7 +66,7 @@ public class SpringFoxConfig {
         return new ApiInfoBuilder()
                 .title("Project")
                 .description("DemoSpring REST API")
-                .contact(new Contact("Demo", "http://localhost:8080/", "support@project.com"))
+                .contact(new Contact("Demo", "http://localhost:8888/", "support@project.com"))
                 .license("Apache 2.0")
                 .termsOfServiceUrl("#")
                 .licenseUrl("http://www.apache.org/licenses/LICENSE-2.0.html")

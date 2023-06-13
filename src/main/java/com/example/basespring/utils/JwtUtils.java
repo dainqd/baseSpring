@@ -55,6 +55,18 @@ public class JwtUtils {
         return decodedJWT;
     }
 
+
+    public String generateToken(Authentication authentication) {
+        UserDetailsIpmpl userPrincipal = (UserDetailsIpmpl) authentication.getPrincipal();
+
+        return Jwts.builder()
+                .setSubject(userPrincipal.getUsername())
+                .setIssuedAt(new Date())
+                .setExpiration(new Date((new Date()).getTime() + jwtExpirationsMs))
+                .signWith(SignatureAlgorithm.HS512, jwtSecret)
+                .compact();
+    }
+
     public static String generateToken(String subject, String role, String issuer, int expireAfter) {
         if (role == null || role.length() == 0) {
             return JWT.create()

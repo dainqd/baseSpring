@@ -21,6 +21,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     private static final String[] IGNORE_PATHS = {
             "/", "/css/**", "/img/**", "/favicon.ico",
+            "/**",
             "/swagger-resources/**",
             "/swagger-ui.html",
             "/webjars/**",
@@ -47,7 +48,6 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
     private static final String[] ADMIN_PATHS = {
             "/admin/api/**",
-            "/mod/api/**",
             "/api/request/no/roles/create/support"
     };
 
