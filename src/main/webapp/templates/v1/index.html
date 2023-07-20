@@ -4,18 +4,32 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+    <th:block th:include="v1/fragments/header.html :: header">
+    </th:block>
 </head>
 <body>
-<div class="">
-   <form th:object="${loginRequest}" th:action="@{/login}"
-         method="post">
-       <label for="username">Username</label>
-       <input th:field="*{username}" class="" type="text" name="username" placeholder="Username">
-       <label for="password">Password</label>
-       <input th:field="*{password}" class="" type="password" name="password"
-              placeholder="Password">
-       <button type="submit" class="">Login</button>
-   </form>
+<th:block th:include="v1/fragments/header.html :: navbar">
+</th:block>
+<div class="container">
+
 </div>
 </body>
+<script src="https://code.jquery.com/jquery-3.7.0.min.js" ></script>
+<script>
+    var user = $.cookie("username")
+    $(document).ready(function () {
+        if (user != null) {
+            $('#username').removeClass('d-none');
+            $('#username a').innerText = user;
+        }
+        console.log(user)
+    })
+
+    $('#navbarSupportedContent ul li a').on("click", function () {
+        console.log('aa')
+        $('#navbarSupportedContent ul li a').addClass('active');
+    });
+</script>
+<th:block th:include="v1/fragments/footer.html :: footer">
+</th:block>
 </html>

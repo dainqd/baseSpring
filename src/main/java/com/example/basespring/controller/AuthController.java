@@ -47,7 +47,7 @@ public class AuthController {
         try {
             LoginRequest loginRequest = new LoginRequest();
             model.addAttribute("loginRequest", loginRequest);
-            return "/v1/index";
+            return "/v1/auth/login";
         } catch (Exception e) {
             return "v1/fail";
         }
@@ -99,7 +99,7 @@ public class AuthController {
             String jwt = jwtUtils.generateToken(authentication);
             UserDetailsIpmpl userDetails = (UserDetailsIpmpl) authentication.getPrincipal();
 
-            Cookie cookie = new Cookie("token", userDetails.getEmail());
+            Cookie cookie = new Cookie("username", userDetails.getUsername());
             cookie.setMaxAge(24 * 60 * 60);
             response.addCookie(cookie);
 
